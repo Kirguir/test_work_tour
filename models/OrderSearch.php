@@ -12,20 +12,15 @@ use app\models\Order;
  */
 class OrderSearch extends Order
 {
-	public $sender_name;
-	public $recipient_name;
-
-
-	/**
+    /**
      * @inheritdoc
      */
     public function rules()
     {
         return [
             [['id', 'status'], 'integer'],
-			[['sender_name', 'recipient_name'], 'string', 'max' => 15],
+            [['sender_name', 'recipient_name', 'process_time'], 'safe'],
             [['count'], 'number'],
-            [['process_time'], 'safe'],
         ];
     }
 
@@ -63,17 +58,16 @@ class OrderSearch extends Order
             return $dataProvider;
         }
 
-		$query->with('sender', 'recipient');
-
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'sender.nickname' => $this->sender_name,
-            'recipient.nickname' => $this->recipient_name,
             'count' => $this->count,
             'status' => $this->status,
             'process_time' => $this->process_time,
         ]);
+
+        $query->andFilterWhere(['like', 'sender_name', $this->sender_name])
+            ->andFilterWhere(['like', 'recipient_name', $this->recipient_name]);
 
         return $dataProvider;
     }

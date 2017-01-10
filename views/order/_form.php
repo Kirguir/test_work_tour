@@ -13,22 +13,16 @@ use yii\widgets\ActiveForm;
 
     <?php $form = ActiveForm::begin(); ?>
 
-	<?= $form->field($model, 'status')
+	<?= $form->field($model, 'action')
 		->dropDownList(
-			[Order::getActions()],
-			['prompt'=>'Select a action', 'id'=>'action_dropdown']
+			Order::getActions(),
+			['id'=>'action_dropdown']
 
-        )->label(''); ?>
+		)->label(''); ?>
 
-    <?= $form->field($model, 'sender_id')->textInput() ?>
+    <?= $form->field($model, 'recipient_name')->textInput(['maxlength' => true]) ?>
 
-    <?= $form->field($model, 'recipient_id')->textInput() ?>
-
-    <?= $form->field($model, 'count')->textInput(['maxlength' => true]) ?>
-
-    <?= $form->field($model, 'status')->dtextInput() ?>
-
-    <?= $form->field($model, 'process_time')->textInput() ?>
+	<?= $form->field($model, 'count')->textInput(['maxlength' => true]) ?>
 
     <div class="form-group">
         <?= Html::submitButton($model->isNewRecord ? 'Create' : 'Update', ['class' => $model->isNewRecord ? 'btn btn-success' : 'btn btn-primary']) ?>

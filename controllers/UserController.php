@@ -10,7 +10,7 @@ use yii\filters\AccessControl;
 use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
-use yii\filters\VerbFilter;
+use yii\web\ForbiddenHttpException;
 
 /**
  * UserController implements the CRUD actions for User model.
@@ -23,19 +23,13 @@ class UserController extends Controller
     public function behaviors()
     {
         return [
-            'verbs' => [
-                'class' => VerbFilter::className(),
-                'actions' => [
-                    'delete' => ['POST'],
-                ],
-            ],
 			'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['view', 'update', 'create', 'delete'],
+                'only' => ['view'],
                 'rules' => [
                     [
                         'allow' => true,
-                        'actions' => ['view', 'update', 'create', 'delete'],
+                        'actions' => ['view'],
                         'roles' => ['@'],
                     ],
                 ],
@@ -67,14 +61,18 @@ class UserController extends Controller
     {
 		$model = $this->findModel($id);
 
+		if($model->nickname !== Yii::$app->user->identity->nickname){
+			throw new ForbiddenHttpException('You don`t access for this page.');
+		}
+
 		$searchModel = new OrderSearch();
 
 		$dataProviderSend = new ActiveDataProvider([
-            'query' => $model->getOrders()->with('sender', 'recipient'),
+            'query' => $model->getOrdersSended()->with('senderName', 'recipientName')->orderBy(['process_time' => SORT_DESC]),
         ]);
 
 		$dataProviderReceive = new ActiveDataProvider([
-            'query' => $model->getOrders0()->with('sender', 'recipient'),
+            'query' => $model->getOrdersReceived()->with('senderName', 'recipientName')->orderBy(['process_time' => SORT_DESC]),
         ]);
 
         return $this->render('view', [
@@ -83,56 +81,6 @@ class UserController extends Controller
             'dataProviderSend' => $dataProviderSend,
             'dataProviderReceive' => $dataProviderReceive,
         ]);
-    }
-
-    /**
-     * Creates a new User model.
-     * If creation is successful, the browser will be redirected to the 'view' page.
-     * @return mixed
-     */
-    public function actionCreate()
-    {
-        $model = new User();
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('create', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    /**
-     * Updates an existing User model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param integer $id
-     * @return mixed
-     */
-    public function actionUpdate($id)
-    {
-        $model = $this->findModel($id);
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('update', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    /**
-     * Deletes an existing User model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param integer $id
-     * @return mixed
-     */
-    public function actionDelete($id)
-    {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace app\models;
 
-use Yii;
+use yii\db\Query;
 
 /**
  * This is the model class for table "user".
@@ -17,7 +17,10 @@ use Yii;
  */
 class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
 {
-    /**
+	public $recive;
+	public $sended;
+
+	/**
      * @inheritdoc
      */
     public static function tableName()
@@ -48,6 +51,7 @@ class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
         return [
             'id' => 'ID',
             'nickname' => 'Nickname',
+            'balance' => 'Balalnce',
             'authKey' => 'Auth Key',
             'accessToken' => 'Access Token',
         ];
@@ -104,6 +108,12 @@ class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
         return $this->authKey === $authKey;
     }
 
+	/**
+	 * Create user by nickname
+	 *
+	 * @param string $nickname
+	 * @return \static|boolean
+	 */
 	public static function create($nickname)
 	{
 		$user = new static();
@@ -122,16 +132,34 @@ class User extends \yii\db\ActiveRecord implements \yii\web\IdentityInterface
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getOrders()
+    public function getOrdersReceived()
     {
-        return $this->hasMany(Order::className(), ['recipient_id' => 'id']);
+        return $this->hasMany(Order::className(), ['recipient_name' => 'nickname']);
     }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getOrders0()
+    public function getOrdersSended()
     {
-        return $this->hasMany(Order::className(), ['sender_id' => 'id']);
+        return $this->hasMany(Order::className(), ['sender_name' => 'nickname']);
     }
+
+	public function getTotalReciveAmount() {
+		$query = (new Query())->from('order')
+			->where('recipient_name = :nickname AND status = 1', [':nickname' => $this->nickname]);
+
+		return $query->sum('count');
+	}
+
+	public function getTotalSendAmount() {
+		$query = (new Query())->from('order')
+			->where('sender_name = :nickname AND status = 1', [':nickname' => $this->nickname]);
+
+		return $query->sum('count');
+	}
+
+	public function getBalance() {
+		return $this->getTotalReciveAmount() - $this->getTotalSendAmount();
+	}
 }

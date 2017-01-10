@@ -16,10 +16,6 @@ $this->params['breadcrumbs'][] = $this->title;
     <?php Pjax::begin(); ?>
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>
 
-    <p>
-        <?= Html::a('Create User', ['create'], ['class' => 'btn btn-success']) ?>
-    </p>
-
     <?= GridView::widget([
         'dataProvider' => $dataProvider,
         'filterModel' => $searchModel,
@@ -28,10 +24,13 @@ $this->params['breadcrumbs'][] = $this->title;
 
             'id',
             'nickname',
-            'authKey',
-            'accessToken',
-
-            ['class' => 'yii\grid\ActionColumn'],
+			[
+				'attribute'=>'balance',
+				'contentOptions' =>['class' => 'table_class','style'=>'display:block;'],
+				'content'=>function($data){
+					return $data->recive - $data->sended;
+				}
+			],
         ],
     ]); ?>
     <?php Pjax::end(); ?>

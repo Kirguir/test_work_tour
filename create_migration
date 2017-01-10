@@ -1,4 +1,6 @@
 yii migrate/create create_user_table --fields="nickname:string(15):notNull:unique, authKey:string(64):notNull:unique, accessToken:string(64):notNull:unique"
 yii migrate/create create_order_table --fields="sender_id:integer:notNull:foreignKey(user), recipient_id:integer:notNull:foreignKey(user), \
 	count:money:notNull, status:integer:defaultValue(0), process_time:datetime:defaultExpression('CURRENT_TIMESTAMP')"
+./yii migrate/create create_order_table --fields="sender_name:string(15):notNull:foreignKey(user nickname), recipient_name:string(15):notNull:foreignKey(user nickname), \
+	count:money:notNull, status:integer:notNull:defaultValue(0), process_time:datetime:notNull:defaultExpression('CURRENT_TIMESTAMP')"
 

@@ -4,10 +4,10 @@ namespace app\controllers;
 
 use Yii;
 use app\models\Order;
-use app\models\OrderSearch;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\filters\VerbFilter;
 
 /**
@@ -24,36 +24,22 @@ class OrderController extends Controller
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
-                    'delete' => ['POST'],
+                    'accept'  => ['POST'],
+                    'decline' => ['POST'],
                 ],
             ],
 			'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['view', 'update', 'create', 'delete'],
+                'only' => ['view', 'create', 'accept', 'decline'],
                 'rules' => [
                     [
                         'allow' => true,
-                        'actions' => ['view', 'update', 'create', 'delete'],
+                        'actions' => ['view', 'create', 'accept', 'decline'],
                         'roles' => ['@'],
                     ],
                 ],
             ],
         ];
-    }
-
-    /**
-     * Lists all Order models.
-     * @return mixed
-     */
-    public function actionIndex()
-    {
-        $searchModel = new OrderSearch();
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
-
-        return $this->render('index', [
-            'searchModel' => $searchModel,
-            'dataProvider' => $dataProvider,
-        ]);
     }
 
     /**
@@ -76,6 +62,7 @@ class OrderController extends Controller
     public function actionCreate()
     {
         $model = new Order();
+		$model->scenario = 'create';
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
             return $this->redirect(['view', 'id' => $model->id]);
@@ -86,36 +73,22 @@ class OrderController extends Controller
         }
     }
 
-    /**
-     * Updates an existing Order model.
-     * If update is successful, the browser will be redirected to the 'view' page.
-     * @param integer $id
-     * @return mixed
-     */
-    public function actionUpdate($id)
+	public function actionAccept($id)
     {
-        $model = $this->findModel($id);
-
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
-        } else {
-            return $this->render('update', [
-                'model' => $model,
-            ]);
-        }
+        if($this->findModel($id)->accept()){
+	        return $this->redirect(['user/view', 'id' => Yii::$app->user->identity->id]);
+		} else {
+			throw new ForbiddenHttpException('You don`t have access this order.');
+		}
     }
 
-    /**
-     * Deletes an existing Order model.
-     * If deletion is successful, the browser will be redirected to the 'index' page.
-     * @param integer $id
-     * @return mixed
-     */
-    public function actionDelete($id)
+	public function actionDecline($id)
     {
-        $this->findModel($id)->delete();
-
-        return $this->redirect(['index']);
+        if($this->findModel($id)->decline()){
+	        return $this->redirect(['user/view', 'id' => Yii::$app->user->identity->id]);
+		} else {
+			throw new ForbiddenHttpException('You don`t have access this order.');
+		}
     }
 
     /**
@@ -127,10 +100,9 @@ class OrderController extends Controller
      */
     protected function findModel($id)
     {
-		$user_id = Yii::$app->user->identity->getId();
+		$nickname = Yii::$app->user->identity->nickname;
 
-        if (($model = Order::find()->where(['AND', 'id' => $id, ['OR', 'sender_id' => $user_id, 'recipient_id' => $user_id]
-			])) !== null) {
+        if (($model = Order::find()->where(['id' => $id])->andWhere('sender_name = :nick OR recipient_name = :nick', [':nick' => $nickname])->one()) !== null) {
             return $model;
         } else {
             throw new NotFoundHttpException('The requested page does not exist.');

@@ -9,7 +9,7 @@ use yii\db\Migration;
  * - `user`
  * - `user`
  */
-class m170109_150717_create_order_table extends Migration
+class m170109_200957_create_order_table extends Migration
 {
     /**
      * @inheritdoc
@@ -18,44 +18,44 @@ class m170109_150717_create_order_table extends Migration
     {
         $this->createTable('order', [
             'id' => $this->primaryKey(),
-            'sender_id' => $this->integer()->notNull(),
-            'recipient_id' => $this->integer()->notNull(),
+            'sender_name' => $this->string(15)->notNull(),
+            'recipient_name' => $this->string(15)->notNull(),
             'count' => $this->money()->notNull(),
             'status' => $this->integer()->notNull()->defaultValue(0),
-            'process_time' => $this->datetime()->defaultExpression('CURRENT_TIMESTAMP'),
+            'process_time' => $this->datetime()->notNull()->defaultExpression('CURRENT_TIMESTAMP'),
         ]);
 
-        // creates index for column `sender_id`
+        // creates index for column `sender_name`
         $this->createIndex(
-            'idx-order-sender_id',
+            'idx-order-sender_name',
             'order',
-            'sender_id'
+            'sender_name'
         );
 
         // add foreign key for table `user`
         $this->addForeignKey(
-            'fk-order-sender_id',
+            'fk-order-sender_name',
             'order',
-            'sender_id',
+            'sender_name',
             'user',
-            'id',
+            'nickname',
             'CASCADE'
         );
 
-        // creates index for column `recipient_id`
+        // creates index for column `recipient_name`
         $this->createIndex(
-            'idx-order-recipient_id',
+            'idx-order-recipient_name',
             'order',
-            'recipient_id'
+            'recipient_name'
         );
 
         // add foreign key for table `user`
         $this->addForeignKey(
-            'fk-order-recipient_id',
+            'fk-order-recipient_name',
             'order',
-            'recipient_id',
+            'recipient_name',
             'user',
-            'id',
+            'nickname',
             'CASCADE'
         );
     }
@@ -67,25 +67,25 @@ class m170109_150717_create_order_table extends Migration
     {
         // drops foreign key for table `user`
         $this->dropForeignKey(
-            'fk-order-sender_id',
+            'fk-order-sender_name',
             'order'
         );
 
-        // drops index for column `sender_id`
+        // drops index for column `sender_name`
         $this->dropIndex(
-            'idx-order-sender_id',
+            'idx-order-sender_name',
             'order'
         );
 
         // drops foreign key for table `user`
         $this->dropForeignKey(
-            'fk-order-recipient_id',
+            'fk-order-recipient_name',
             'order'
         );
 
-        // drops index for column `recipient_id`
+        // drops index for column `recipient_name`
         $this->dropIndex(
-            'idx-order-recipient_id',
+            'idx-order-recipient_name',
             'order'
         );
 

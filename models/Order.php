@@ -8,20 +8,25 @@ use Yii;
  * This is the model class for table "order".
  *
  * @property integer $id
- * @property integer $sender_id
- * @property integer $recipient_id
+ * @property string $sender_name
+ * @property string $recipient_name
  * @property string $count
  * @property integer $status
  * @property string $process_time
  *
- * @property User $recipient
- * @property User $sender
+ * @property User $recipientName
+ * @property User $senderName
  */
 class Order extends \yii\db\ActiveRecord
 {
-
 	const ACTION_SEND    = 1;
 	const ACTION_RECEIVE = 2;
+
+	const STATUS_PROCESSING = 0;
+	const STATUS_ACCEPTED = 1;
+	const STATUS_DECLINED = 2;
+
+	public $action;
 
 	/**
      * @inheritdoc
@@ -37,13 +42,35 @@ class Order extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['sender_id', 'recipient_id', 'count'], 'required'],
-            [['sender_id', 'recipient_id', 'status'], 'integer'],
-            [['count'], 'number'],
+            [['sender_name', 'recipient_name', 'count'], 'required'],
+            [['count'], 'number', 'min' => 0],
+            [['action'], 'in', 'range' => array_keys(self::getActions()), 'on' => 'create'],
+            [['status'], 'in', 'range' => array_keys(self::getStatuses())],
             [['process_time'], 'safe'],
-            [['recipient_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['recipient_id' => 'id']],
-            [['sender_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['sender_id' => 'id']],
+            [['sender_name', 'recipient_name'], 'string', 'max' => 15],
+			[['recipient_name', 'sender_name'], 'validateUsername'],
+            [['recipient_name'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['recipient_name' => 'nickname']],
+            [['sender_name'], 'exist', 'skipOnError' => true, 'targetClass' => User::className(), 'targetAttribute' => ['sender_name' => 'nickname']],
         ];
+    }
+
+	public function beforeValidate()
+	{
+		if($this->action == self::ACTION_SEND){
+			$this->sender_name = Yii::$app->user->identity->nickname;
+		}elseif($this->action == self::ACTION_RECEIVE){
+			$this->sender_name = $this->recipient_name;
+			$this->recipient_name = Yii::$app->user->identity->nickname;
+		}
+
+		return parent::beforeValidate();
+	}
+
+	public function validateUsername($attribute, $params)
+    {
+        if (User::findByUsername($this->$attribute) === null) {
+            User::create($this->$attribute);
+        }
     }
 
     /**
@@ -53,8 +80,9 @@ class Order extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'sender_id' => 'Sender ID',
-            'recipient_id' => 'Recipient ID',
+            'action' => 'Action',
+            'sender_name' => 'Sender Name',
+            'recipient_name' => 'Recipient Name',
             'count' => 'Count',
             'status' => 'Status',
             'process_time' => 'Process Time',
@@ -64,24 +92,55 @@ class Order extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getRecipient()
+    public function getRecipientName()
     {
-        return $this->hasOne(User::className(), ['id' => 'recipient_id']);
+        return $this->hasOne(User::className(), ['nickname' => 'recipient_name']);
     }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getSender()
+    public function getSenderName()
     {
-        return $this->hasOne(User::className(), ['id' => 'sender_id']);
+        return $this->hasOne(User::className(), ['nickname' => 'sender_name']);
     }
 
 	public static function getActions()
 	{
-		return [
-			self::ACTION_SEND    => 'SEND MONEY',
+		return [ 
+			self::ACTION_SEND   => 'SEND MONEY',
 			self::ACTION_RECEIVE => 'SEND SCORE',
 		];
+	}
+
+	public static function getStatuses()
+	{
+		return [
+			self::STATUS_PROCESSING => 'Processing',
+			self::STATUS_ACCEPTED   => 'Accepted',
+			self::STATUS_DECLINED   => 'Declined',
+		];
+	}
+
+	public function accept() {
+		if($this->sender_name === Yii::$app->user->identity->nickname) {
+			$this->status = self::STATUS_ACCEPTED;
+
+			return $this->update();
+		} else {
+			return false;
+		}
+	}
+
+	public function decline() {
+		if($this->sender_name === Yii::$app->user->identity->nickname
+			|| $this->recipient_name === Yii::$app->user->identity->nickname) {
+			
+			$this->status = self::STATUS_DECLINED;
+
+			return $this->update();
+		} else {
+			return false;
+		}
 	}
 }

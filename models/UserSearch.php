@@ -3,6 +3,7 @@
 namespace app\models;
 
 use Yii;
+use yii\db\Query;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use app\models\User;
@@ -12,7 +13,7 @@ use app\models\User;
  */
 class UserSearch extends User
 {
-    /**
+	/**
      * @inheritdoc
      */
     public function rules()
@@ -41,7 +42,19 @@ class UserSearch extends User
      */
     public function search($params)
     {
-        $query = User::find();
+		$subQuery = (new Query())->select(['COALESCE(SUM(count), 0)'])
+			->from('order')
+			->where('recipient_name = nickname AND status = 1');
+
+		$subQuery2 = (new Query())->select(['COALESCE(SUM(count), 0) as sss'])
+			->from('order')
+			->where('sender_name = nickname AND status = 1');
+
+        $query = User::find()->select([
+			'*',
+			'recive' => $subQuery,
+			'sended' => $subQuery2,
+		]);
 
         // add conditions that should always apply here
 

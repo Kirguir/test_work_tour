@@ -6,6 +6,13 @@
 class_name: UnitTester
 modules:
     enabled:
-      - Asserts
-      - Yii2:
+        - Asserts:
+        - Db:
+            dsn: 'mysql:host=localhost;dbname=test_db'
+            user: 'root'
+            password: ''
+            cleanup: false
+            dump: 'tests/_data/dump.sql'
+            populate: true
+        - Yii2:
             part: [orm, email]
